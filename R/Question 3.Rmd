@@ -1,0 +1,80 @@
+---
+title: "Question 3"
+output: html_document
+---
+
+### How does the number of people flying between different locations change over time?
+
+*Setting up*
+
+```{r}
+library(lubridate)
+
+#selecting only the necessary columns
+q3 <- select(final_df, Year, Month, Origin, Dest)
+
+#importing the airports dataset
+airports <- read.csv("Dataset/airports.csv")
+airports <- rename(airports, Origin = iata)
+
+#merging the dataset with airports
+q3 <- inner_join(q3,airports, by = "Origin")
+head(q3)
+q3 <- select(q3, Year:Dest, state)
+q3 <- na.omit(q3)
+```
+
+```{r}
+#converting to datetime format
+q3 <- mutate(q3,Yearmonth = make_datetime(Year, Month))
+q3$Yearmonth <- format(as.Date(q3$Yearmonth), "%Y-%m")
+```
+
+```{r}
+#grouping the data by the Year and month and plotting the trend
+grouped_q3 <- q3 %>%
+  group_by(Yearmonth) %>%
+  summarize(Count = n())
+
+grouped_q3 %>%
+  ggplot(aes(x=Yearmonth, y = Count, group=1)) +
+  geom_line(color = "#081566") +
+  ggtitle("Trend of the number of flights over time") +
+  labs(x= "Year-Month", y = "Number of flights") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 75, vjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+*Location wise Analysis*
+
+```{r}
+top_states <- q3 %>%
+  group_by(state) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  top_n(10)
+```
+
+```{r}
+#create a dataframe filtered for the top 10 states, grouped by Month and Year
+top_10 <- q3 %>%
+  filter(state %in% top_states$state) %>%
+  group_by(state, Year, Month) %>%
+  summarize(count = n())
+
+```
+
+```{r}
+#plot of the top 10 states over time
+ggplot(data = top_10) +
+  geom_col(mapping = aes(x = state, y = count, fill = factor(Year)),
+           position = "dodge") + 
+  ggtitle("Number of flights over time by top states") + 
+  scale_color_brewer("YlGnBu") +
+  labs(fill = "Year") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```

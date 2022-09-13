@@ -1,0 +1,74 @@
+---
+title: "Question 2"
+output: html_document
+---
+
+### Do older planes suffer more delays?
+
+*Setting up the data*
+```{r}
+planes_data <- read.csv("Dataset/plane-data.csv")
+
+q2 <- select(final_df, Year, TailNum, ArrDelay)
+planes_data <- select(planes_data, tailnum, year)
+
+#renaming the columns
+planes_data <- rename(planes_data, TailNum = tailnum, Manu_Year = year)
+
+#merging both datasets based on tailnum
+q2 <- inner_join(q2,planes_data, by = "TailNum")
+
+#only considering delays>0 as a delayed plane
+q2 <- filter(q2, ArrDelay>0)
+
+```
+
+```{r}
+colSums(is.na(q2))
+count(q2, Manu_Year)
+
+#cleaning the Manu_Year column
+q2 <- subset(q2, Manu_Year != "0000" & Manu_Year != "None" & Manu_Year != "")
+
+```
+
+```{r}
+
+#add a new column with age of the flight
+q2 <- mutate(q2, 
+             age = Year - as.integer(Manu_Year))
+
+count(q2, age)
+
+#remove where age = -1 (When Year = 2006 and Manu_Year = 2007)
+q2 <- subset(q2, age!= -1)
+
+```
+
+```{r}
+#plotting the relationship between age and delays 
+q2 %>%
+  group_by(age) %>%
+  summarize(age_delay = mean(ArrDelay)) %>%
+  ggplot(aes(x=age, y=age_delay)) +
+  geom_point(color = "#8a8ea8") +
+  geom_smooth(se = FALSE, method = "lm", color = "#2c3fb8") + 
+  ggtitle("Relationship between Age of flights and Delays") +
+  labs(x= "Age", y= "Avg. Delays") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+#considering planes age >30 to be old planes
+q2 %>%
+  filter(age>30) %>%
+  summarize(old_delay = mean(ArrDelay))
+
+q2%>%
+  filter(age<=30) %>%
+  summarize(new_delay = mean(ArrDelay))
+#older planes do tend to have higher delays to an extent
+
+```
+

@@ -1,0 +1,88 @@
+---
+title: "Question 4"
+output: html_document
+---
+
+### Can you detect cascading failures as delays in one airport create delays in others?
+
+```{r}
+library(lubridate)
+
+#selecting the necessary columns
+q4 <- select(final_df, Year, Month, DayofMonth, DayOfWeek, DepTime, TailNum, ArrDelay, Origin, Dest)
+```
+
+*Converting to datetime*
+```{r}
+#extracting the minutes
+
+ext_mins <-  function(x){
+    substr(x, nchar(x)-1, nchar(x))
+}
+
+mins <- as.integer(ext_mins(q4$DepTime))
+
+```
+
+```{r}
+#extracting the hours
+hours <- floor(q4$DepTime / 100)
+```
+
+```{r}
+#converting to datetime
+q4 <- mutate(q4, Datetime = make_datetime(Year, Month, DayofMonth, 
+                                          hours, mins))
+
+```
+
+*Grouping and sorting*
+```{r}
+#grouping and sorting the data by tailnumber and datetime
+q4 <- arrange(q4, TailNum, Datetime)
+
+```
+
+```{r}
+#comparing the current delay with the next delay
+
+
+q4 <- q4 %>%
+  mutate(Nextdelay = lead(ArrDelay))
+```
+
+```{r}
+#plotting the cascading delays
+ggplot(data = q4, aes(x = ArrDelay, y = Nextdelay)) +
+  geom_point(color = "#83D6D1") +
+  geom_smooth(se = FALSE, color = "#2B229A") +
+  ggtitle("Cascading delays") +
+  labs(x= "Current Delay", y = "Next Delay") +
+  theme_classic()
+  
+```
+
+*Summarising the proportions of Current and Next delays*
+```{r}
+#encoding the data 
+q4$HasCurrentDelay <- ifelse(q4$ArrDelay>0, 1,0)
+q4$HasNextDelay <- ifelse(q4$Nextdelay>0, 1, 0)
+
+crosstab <- table(q4$HasCurrentDelay, q4$HasNextDelay)
+
+
+```
+
+*Significance test*
+```{r}
+chisq.test(crosstab, correct = FALSE)
+
+```
+
+```{r}
+#interpreting the results
+
+#since the p-value< significance level --> The null hypothesis will be rejected and 
+#we conclude that there is an association between the current and next delays.
+```
+

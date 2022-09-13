@@ -1,0 +1,130 @@
+---
+title: "Question 1"
+output: html_document
+---
+
+### What is the best time of day, day of week , time of the year to minimise delays?
+```{r}
+#creating a dataframe with omly the necessary columns
+q1 <- select(final_df, Year:DayOfWeek, DepTime, ArrDelay)
+head(q1)
+```
+
+```{r}
+#only when delays are > 0, the plane will be considered as delayed.
+#arrival delays will be used for all delay analyses.
+
+#filtering Arr Delay >0  
+q1 <- q1[q1$ArrDelay >0,]
+```
+
+*What is the best time of the day?*
+```{r}
+#creating timeframes according to departure time
+q1$Timeframe <- NA
+
+q1$Timeframe[q1$DepTime <6] <- "12am - 6am"
+q1$Timeframe[q1$DepTime >=6 & q1$DepTime < 1200] <- "6am - 12pm"
+q1$Timeframe[q1$DepTime >=1200 & q1$DepTime < 1800] <- "12pm - 6pm"
+q1$Timeframe[q1$DepTime >=1800 & q1$DepTime <= 2359] <- "6pm - 12am"
+
+```
+
+```{r}
+q1 %>%
+  group_by(Timeframe) %>%
+  summarize(avg_delay = mean(ArrDelay)) %>%
+  arrange(avg_delay)
+
+#The timeframe between 6am - 12 pm is the best time to fly.
+```
+
+```{r}
+#plot the best time of day
+q1 %>%
+  group_by(Timeframe) %>%
+  summarize(avg_delay = mean(ArrDelay)) %>%
+  
+  ggplot(aes(x="", y=avg_delay, fill=Timeframe)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y") +
+  ggtitle("Delays in different Timeframes") +
+  theme_void() +
+  scale_fill_brewer(palette="YlGnBu") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+*What is the best day of week*
+```{r}
+q1 %>%
+  group_by(DayOfWeek) %>%
+  summarize(Avg_Delay_Day = mean(ArrDelay)) %>%
+  arrange(Avg_Delay_Day)
+```
+
+```{r}
+#bar plot to show delayed flights by Day of Week
+q1 %>%
+  group_by(DayOfWeek) %>%
+  summarize(Avg_Delay_Day = mean(ArrDelay)) %>%
+  arrange(desc(Avg_Delay_Day)) %>%
+  
+  ggplot(mapping =aes(x = factor(DayOfWeek), y = Avg_Delay_Day, fill= factor(DayOfWeek))) +
+  geom_col() +
+  ggtitle("Average Delays by the Day of the Week") +
+  labs(x="Day of Week", y="Avg. Delay (mins)", fill = "Day Of Week") +
+  scale_fill_brewer(palette = "YlGnBu") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme_classic()
+```
+
+*What is the best time of the year to fly?*
+```{r}
+#analysing the time of the year season wise 
+q1$TimeofYear <- NA
+
+q1$TimeofYear[q1$Month >=3 & q1$Month <=5] <- "Spring"
+q1$TimeofYear[q1$Month >=6 & q1$Month <=8] <- "Summer"
+q1$TimeofYear[q1$Month >=9 & q1$Month <= 11] <- "Fall"
+q1$TimeofYear[q1$Month ==12 | q1$Month <= 2] <- "Winter"
+```
+
+```{r}
+q1 %>%
+  group_by(TimeofYear) %>%
+  summarize(Avg_TimeofYear = mean(ArrDelay)) %>%
+  arrange(Avg_TimeofYear)
+```
+
+```{r}
+
+#analysing month wise
+q1 %>%
+  group_by(Month) %>%
+  summarize(Avg_Delay_Month = mean(ArrDelay)) %>%
+  arrange(Avg_Delay_Month)
+
+```
+
+```{r}
+#bar plot to show delayed times according to Month
+q1 %>%
+  group_by(Month) %>%
+  summarize(Avg_Delay_Month = mean(ArrDelay)) %>%
+  arrange(Avg_Delay_Month) %>%
+  
+  ggplot(aes(x = Avg_Delay_Month, y = factor(Month), fill = factor(Month))) +
+  geom_col() +
+  labs(fill = "Month", x = "Average Delays (in Minutes)", y = "Month") +
+  ggtitle("Flight delays according to Month") +
+  theme_classic() +
+  scale_fill_manual(values=as.vector(ocean.haline(12))) +
+  theme(plot.title = element_text(hjust = 0.5))
+#best time of the year to fly is fall - in the month of November in particular
+
+```
+
+```{r}
+
+```
+
