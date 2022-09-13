@@ -1,0 +1,70 @@
+---
+title: "Data Cleaning"
+output: html_document
+---
+
+*Importing datasets and libraries*
+```{r}
+#importing libraries
+library(tidyverse)
+
+#importing datasets
+data1 <- read.csv("Dataset/2006.csv.bz2")
+data2 <- read.csv("Dataset/2007.csv.bz2")
+
+#concatenating the datasets into one 
+final_df <- rbind(data1, data2)
+```
+
+*Data Exploration*
+```{r}
+
+head(final_df)
+dim(final_df)
+str(final_df)
+
+#checking for null values
+colSums(is.na(final_df))
+
+```
+
+```{r}
+#bounds checking - checking whether any variable has values that are out of bounds
+min(final_df$Month)
+max(final_df$Month)
+
+min(final_df$DayofMonth)
+max(final_df$ArrTime)
+
+min(final_df$DayOfWeek)
+max(final_df$DayOfWeek)
+
+min(final_df$DepTime, na.rm = TRUE)
+max(final_df$DepTime, na.rm = TRUE)
+
+min(final_df$ArrTime, na.rm = TRUE)
+max(final_df$ArrTime, na.rm = TRUE)
+```
+
+```{r}
+#deptime and arrtime have out of bound values until 29 (max possible value is 2359)
+#the rows with DepTime / ArrTime > 2359 are removed
+
+final_df <- filter(final_df, DepTime <2400, ArrTime <2400)
+max(final_df$DepTime)
+max(final_df$ArrTime)
+
+#checking for null values again
+colSums(is.na(final_df))
+
+#all null values in the dataset have been removed
+
+#remove the cancellation code column
+final_df$CancellationCode <- NULL
+colnames(final_df)
+```
+
+```{r}
+
+```
+

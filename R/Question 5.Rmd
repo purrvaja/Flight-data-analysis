@@ -1,0 +1,108 @@
+---
+title: "Question 5"
+output: html_document
+---
+
+### Use the available variables to construct a model that predicts delays
+
+*Setting up*
+
+```{r}
+#importing libraries
+
+library(mlr3)
+library(corrplot)
+library(caret)
+library(caTools)
+library(tidyverse)
+library(reshape2)
+library(tidyverse)
+library(randomForest)
+```
+
+```{r}
+#selecting the dataframe for the model
+
+colnames(final_df)
+str(final_df)
+
+q5 <- select(final_df, Year:CRSArrTime,ActualElapsedTime:DepDelay, 
+             Distance:TaxiOut,CarrierDelay:LateAircraftDelay)
+```
+
+*Visualization and Pre-processing*
+
+```{r}
+#correlation plot 
+#memory.limit(size = 15000)
+corrplot(abs(cor(q5)), method = "color", 
+         title = "Correlation plot", 
+         tl.col="black", tl.srt=45,
+         addCoef.col = "grey", 
+         number.cex = 0.5,
+         tl.cex = 0.5, 
+         type = "lower",
+         is.corr = FALSE,
+         col=colorRampPalette(c("khaki","lightblue1","dodgerblue3"))(100))
+```
+
+*Building the model*
+
+```{r}
+set.seed(321)
+
+
+split <- sample.split(q5$ArrDelay, SplitRatio = 0.8)
+train <- subset(q5, split == TRUE)
+test <- subset(q5, split == FALSE)
+
+```
+
+*Scaling the data*
+
+```{r}
+train <- scale(train)
+test <- scale(test)
+
+```
+
+### Multiple Linear Regression
+
+```{r}
+train <- as.data.frame(train)
+
+mlr <- lm(ArrDelay ~ DepDelay+ CRSDepTime+ CRSArrTime+ CRSElapsedTime+
+          Month +DayOfWeek, data = train)
+summary(mlr)
+
+```
+
+*Visualizing the Model*
+
+```{r}
+
+#Actual vs Predicted Plot
+
+test <- as.data.frame(test)
+test$predicted <- predict(mlr,test)
+test %>%
+  ggplot(aes(ArrDelay,predicted)) +
+  geom_point(alpha=0.5) +
+  stat_smooth(aes(colour='black')) +
+  ggtitle("Actual vs Predicted values")
+  xlab('Actual value') +
+  ylab('Predicted value')+
+  theme_classic()
+
+
+```
+
+
+### Random Forest Regression
+```{r}
+set.seed(123)
+rf.fit <- randomForest(ArrDelay ~ DepDelay+ CRSDepTime+ CRSArrTime+ CRSElapsedTime+
+          Month +DayOfWeek, data = train, ntrees = 10)
+
+rf.fit
+```
